@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -22,14 +23,31 @@ public class Main {
       // If the path doesn't have anything then accept the request
       BufferedReader out = new BufferedReader(new InputStreamReader(client.getInputStream()));
 
-      String validPath = "/";
+      String[] validPaths = {"/", "/echo/"};
 
       String[] checkRequest = out.readLine().split(" ");
 
-      if (checkRequest[0].equals("GET") && checkRequest[1].equals(validPath)) {
-        client.getOutputStream().write(("HTTP/1.1 200 OK\r\n\r\n").getBytes());
+      OutputStream clientOutputStream = client.getOutputStream();
+
+      String incomingPath = checkRequest[1];
+      String basePath = incomingPath.substring(0, incomingPath.lastIndexOf("/") + 1);
+      String pathValue = incomingPath.substring(incomingPath.lastIndexOf("/") + 1);
+
+      Boolean isValidPath = false;
+      for (String validPath : validPaths) {
+        if (basePath.equals("/") && pathValue.isEmpty()) {
+          isValidPath = true;
+        } else if (basePath.equals(validPath)) {
+          isValidPath = true;
+        } else {
+          isValidPath = false;
+        }
+      }
+      if (isValidPath && checkRequest[0].equals("GET")) {
+        clientOutputStream.write(("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + pathValue.length() + "\r\n\r\n" + pathValue).getBytes());
       } else {
-        client.getOutputStream().write(("HTTP/1.1 404 Not Found\r\n\r\n").getBytes());
+        System.out.println("Invalid path: " + incomingPath);
+        clientOutputStream.write(("HTTP/1.1 404 Not Found\r\n\r\n").getBytes());
       }
 
       System.out.println("accepted new connection");
