@@ -23,9 +23,13 @@ public class Main {
       // If the path doesn't have anything then accept the request
       BufferedReader out = new BufferedReader(new InputStreamReader(client.getInputStream()));
 
-      String[] validPaths = {"/", "/echo/"};
+      String[] validPaths = {"/", "/echo/", "/user-agent"};
 
       String[] checkRequest = out.readLine().split(" ");
+
+     for (String line: checkRequest) {
+        System.out.println("line --> " + line);
+      }
 
       OutputStream clientOutputStream = client.getOutputStream();
 
@@ -33,18 +37,20 @@ public class Main {
       String basePath = incomingPath.substring(0, incomingPath.lastIndexOf("/") + 1);
       String pathValue = incomingPath.substring(incomingPath.lastIndexOf("/") + 1);
 
-      Boolean isValidPath = false;
-      for (String validPath : validPaths) {
-        if (basePath.equals("/") && pathValue.isEmpty()) {
-          isValidPath = true;
-        } else if (basePath.equals(validPath)) {
-          isValidPath = true;
-        } else {
-          isValidPath = false;
+      if (checkRequest[0].equals("GET")) {
+        if (basePath.equals("/") && pathValue.isEmpty() || basePath.equals(validPaths[0]) || basePath.equals(validPaths[1])) {
+            clientOutputStream.write(("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + pathValue.length() + "\r\n\r\n" + pathValue).getBytes());
         }
-      }
-      if (isValidPath && checkRequest[0].equals("GET")) {
-        clientOutputStream.write(("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + pathValue.length() + "\r\n\r\n" + pathValue).getBytes());
+        if (incomingPath.equals("/user-agent")) {
+          // get headers a return User agent header value from the arguments
+          out.readLine();
+          String userAgent = out.readLine().split("\\s+")[1];
+          Integer conentLength = userAgent.length();
+          System.out.println("user agent: " + conentLength);
+
+          String reply = String.format("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + userAgent.length() + "\r\n\r\n" + userAgent);
+          clientOutputStream.write(reply.getBytes());
+        }
       } else {
         System.out.println("Invalid path: " + incomingPath);
         clientOutputStream.write(("HTTP/1.1 404 Not Found\r\n\r\n").getBytes());
